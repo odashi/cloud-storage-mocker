@@ -31,13 +31,13 @@ This library provides `patch` context manager, which replaces following classes 
 - `Bucket`
 - `Blob`
 
-`patch` takes a list of `Mount` objects, which represents a mapping between a bucket
-name and a local storage.
-Each mount has Boolean configs `readable` and `writable` to control read/write access
-to the mounted bucket.
+`patch` takes a list of `Mount` objects, which represent mappings between bucket names
+and directories on the local filesystem.
+Each `Mount` has Boolean configs `readable` and `writable` to control read/write
+permissions to the mounted buckets.
 
-A canonical way to use this library is writing unit tests that are working with Google
-Cloud Storage:
+A canonical use-case of this package is writing unit tests to check the behavior of the
+code that works with Google Cloud Storage:
 
 ```python
 import tempfile
@@ -77,7 +77,7 @@ def test_something() -> None:
 
 ## Patched methods
 
-Methods below has a specialized behavior to mount the local filesystem.
+Methods listed below have specialized behavior to mount the local filesystem.
 
 Other methods are mapped to `MagicMock`.
 
@@ -90,5 +90,5 @@ Other methods are mapped to `MagicMock`.
 
 ## Caution
 
-This library is provided for writing unit tests that work with the Google Cloud Storage
-client library. DO NOT use this library on any code on the production.
+This library is basically provided for writing unit tests.
+DO NOT use this library on any code on the production.
