@@ -23,27 +23,30 @@ Cloud Storage:
 ```python
 import tempfile
 
-import google.cloud.storage
+import google.cloud.storage  # type: ignore[import]
 
-from cloud_storage_mocker import patch as gcs_patch, Mount
+from cloud_storage_mocker import Mount
+from cloud_storage_mocker import patch as gcs_patch
 
-# A pytest test case.
+
 def test_something() -> None:
     # Creates a temporary directory
     # And mounts it to the Cloud Storage bucket "my_bucket"
     with (
         tempfile.TemporaryDirectory() as readable_dir,
         tempfile.TemporaryDirectory() as writable_dir,
-        gcs_patch([
-            Mount("readable_bucket", readable_dir, readable=True),
-            Mount("writable_bucket", writable_dir, writable=True),
-        ]),
+        gcs_patch(
+            [
+                Mount("readable_bucket", readable_dir, readable=True),
+                Mount("writable_bucket", writable_dir, writable=True),
+            ]
+        ),
     ):
         # Reads a blob.
         with open(readable_dir + "/test.txt", "w") as fp:
             fp.write("Hello.")
         blob = google.cloud.storage.Client().bucket("readable_bucket").blob("test.txt")
-        assert readable_blob.download_as_text() == "Hello."
+        assert blob.download_as_text() == "Hello."
 
         # Writes a blob.
         blob = google.cloud.storage.Client().bucket("writable_bucket").blob("test.txt")
