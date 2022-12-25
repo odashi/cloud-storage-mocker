@@ -1,0 +1,73 @@
+[build-system]
+requires = [
+    "hatchling",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "cloud-storage-mocker"
+description = "Mocker library of Google Cloud Storage with local filesystem mounting."
+readme = "README.md"
+requires-python = ">=3.10, <3.12"
+license = {text = "MIT License"}
+authors = [
+    {name = "Yusuke Oda", email = "odashi@inspiredco.ai"}
+]
+keywords = [
+    "cloud storage",
+    "gcloud",
+    "google",
+    "google cloud",
+    "storage",
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "google-cloud-storage>=2.7.0",
+]
+dynamic = [
+    "version"
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=22.10",
+    "flake8>=5.0",
+    "isort>=5.10",
+    "mypy>=0.991",
+    "pyproject-flake8>=5.0",
+    "pytest>=7.1",
+]
+mypy = [
+    "mypy>=0.991",
+    "pytest>=7.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/odashi/cloud-storage-mocker"
+"Bug Tracker" = "https://github.com/odashi/cloud-storage-mocker/issues"
+
+[tool.hatch.build]
+include = [
+    "*.py",
+]
+exclude = [
+    "*_test.py",
+]
+only-packages = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cloud_storage_mocker"]
+
+[tool.hatch.version]
+path = "src/cloud_storage_mocker/_version.py"
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203"
+
+[tool.isort]
+profile = "black"
