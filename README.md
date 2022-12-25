@@ -49,8 +49,7 @@ from cloud_storage_mocker import patch as gcs_patch
 
 
 def test_something() -> None:
-    # Creates a temporary directory
-    # And mounts it to the Cloud Storage bucket "my_bucket"
+    # Creates two temporary directories, and mount them as readable/writable buckets.
     with (
         tempfile.TemporaryDirectory() as readable_dir,
         tempfile.TemporaryDirectory() as writable_dir,
