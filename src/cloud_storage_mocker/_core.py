@@ -9,6 +9,11 @@ from unittest import mock
 import google.cloud.exceptions
 import google.cloud.storage  # type: ignore[import]
 
+# Obtains original objects before mocking.
+_ORIG_CLIENT = google.cloud.storage.Client
+_ORIG_BUCKET = google.cloud.storage.Bucket
+_ORIG_BLOB = google.cloud.storage.Blob
+
 
 @dataclasses.dataclass(frozen=True)
 class Mount:
@@ -72,7 +77,7 @@ class Client(mock.MagicMock):
 
     def __init__(self, env: Environment) -> None:
         """Initializer."""
-        super().__init__(google.cloud.storage.Client)
+        super().__init__(_ORIG_CLIENT)
         self._env = env
 
     def bucket(self, name: str) -> "Bucket":
@@ -88,7 +93,7 @@ class Bucket(mock.MagicMock):
 
     def __init__(self, env: Environment, name: str) -> None:
         """Initializer."""
-        super().__init__(google.cloud.storage.Bucket)
+        super().__init__(_ORIG_BUCKET)
         self._env = env
         self._name = name
 
@@ -106,7 +111,7 @@ class Blob(mock.MagicMock):
 
     def __init__(self, env: Environment, bucket: str, path: str) -> None:
         """Initializer."""
-        super().__init__(google.cloud.storage.Blob)
+        super().__init__(_ORIG_BLOB)
         self._env = env
         self._bucket = bucket
         self._path = path
