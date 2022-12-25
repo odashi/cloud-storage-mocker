@@ -3,7 +3,26 @@
 Mocker library of Google Cloud Storage with local filesystem mounting.
 
 
-## Getting started
+## Install
+
+For package users:
+
+```shell
+pip install cloud-storage-mocker
+```
+
+For package developers:
+
+```shell
+git clone git@github.com:odashi/cloud-storage-mocker
+cd cloud-storage-mocker
+python -m venv venv
+source venv/bin/activate
+pip install -e '.[dev]'
+```
+
+
+## How the package works
 
 This library provides `patch` context manager, which replaces following classes on the
 `google-cloud-storage` package:
