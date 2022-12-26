@@ -199,6 +199,7 @@ class Blob(mock.MagicMock):
         file_obj: io.BufferedWriter,
         *args: Any,  # Not supported
     ) -> None:
+        """Downloads blob to a file object."""
         local_path = self._get_readable_path()
 
         try:
@@ -210,6 +211,15 @@ class Blob(mock.MagicMock):
             )
 
         file_obj.write(data)
+
+    def download_to_filename(
+        self,
+        filename: str,
+        *args: Any,  # Not supported
+    ) -> None:
+        """Downloads blob to a file specified by a path."""
+        with open(filename, "wb") as fp:
+            self.download_to_file(fp, *args)
 
     def download_as_bytes(
         self,
