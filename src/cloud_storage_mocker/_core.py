@@ -185,7 +185,7 @@ class Blob(mock.MagicMock):
         return f"gs://{self._bucket.name}/{self._name}"
 
     def _get_readable_path(self) -> pathlib.Path:
-        """Helper to obtain a local path for the readable bucket."""
+        """Obtains a local path for the readable blob."""
         mount = self._env.get_mount(self._bucket.name)
         if not mount.readable:
             raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
@@ -193,6 +193,19 @@ class Blob(mock.MagicMock):
             )
 
         return self._get_local_path(mount)
+
+    def _get_writable_path(self) -> pathlib.Path:
+        """Obtains a local path for the writable blob with recursive mkdir calls."""
+        mount = self._env.get_mount(self._bucket.name)
+        if not mount.writable:
+            raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
+                f"Bucket is not writable: {self._bucket.name}"
+            )
+
+        local_path = self._get_local_path(mount)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+
+        return local_path
 
     def download_to_file(
         self,
@@ -251,27 +264,47 @@ class Blob(mock.MagicMock):
                 f"File not found: {self._get_gs_path()} -> {local_path}"
             )
 
+    def upload_from_file(
+        self,
+        file_obj: io.BufferedReader,
+        *args: Any,  # Not supported
+    ) -> None:
+        """Uploads the content in the opened file to a blob."""
+        local_path = self._get_writable_path()
+
+        data = file_obj.read()
+
+        try:
+            with local_path.open("wb") as fp:
+                fp.write(data)
+        except FileNotFoundError:
+            raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
+                f"File not found: {self._get_gs_path()} -> {local_path}"
+            )
+
+    def upload_from_filename(
+        self,
+        filename: str,
+        *args: Any,  # Not supported
+    ) -> None:
+        """Uploads the content in the specified file to a blob."""
+        with open(filename, "rb") as fp:
+            self.upload_from_file(fp)
+
     def upload_from_string(
         self,
         data: str | bytes,
         *args: Any,  # Not supported
     ) -> None:
         """Uploads string to a blob."""
-        mount = self._env.get_mount(self._bucket.name)
-        if not mount.writable:
-            raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
-                f"Bucket is not writable: {self._bucket.name}"
-            )
-
-        local_path = self._get_local_path(mount)
-        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path = self._get_writable_path()
 
         try:
             if isinstance(data, str):
-                with local_path.open("w") as fp:
+                with local_path.open("w") as fp:  # fp is TextIOWrapper
                     fp.write(data)
             else:
-                with local_path.open("wb") as fp:
+                with local_path.open("wb") as fp:  # fp is BufferedWriter
                     fp.write(data)
         except FileNotFoundError:
             raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]

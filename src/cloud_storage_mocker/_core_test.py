@@ -175,6 +175,68 @@ def test__blob__download_as_text__not_found() -> None:
             blob.download_as_text()
 
 
+def test__blob__upload_from_file__success() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir, writable=True)]),
+    ):
+        dir = pathlib.Path(readable_dir)
+        with open(dir / "source.txt", "w") as fp:
+            fp.write("Hello.")
+
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+        with open(dir / "source.txt", "rb") as fp:
+            blob.upload_from_file(fp)
+
+        with open(dir / "test.txt") as fp:
+            assert fp.read() == "Hello."
+
+
+def test__blob__upload_from_file__forbidden() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir)]),
+    ):
+        dir = pathlib.Path(readable_dir)
+        with open(dir / "source.txt", "w") as fp:
+            fp.write("Hello.")
+
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+        with open(dir / "source.txt", "rb") as fp:
+            with pytest.raises(google.cloud.exceptions.Forbidden):
+                blob.upload_from_file(fp)
+
+
+def test__blob__upload_from_filename__success() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir, writable=True)]),
+    ):
+        dir = pathlib.Path(readable_dir)
+        with open(dir / "source.txt", "w") as fp:
+            fp.write("Hello.")
+
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+        blob.upload_from_filename(dir / "source.txt")
+
+        with open(dir / "test.txt") as fp:
+            assert fp.read() == "Hello."
+
+
+def test__blob__upload_from_filename__forbidden() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir)]),
+    ):
+        dir = pathlib.Path(readable_dir)
+        with open(dir / "source.txt", "w") as fp:
+            fp.write("Hello.")
+
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+        with pytest.raises(google.cloud.exceptions.Forbidden):
+            blob.upload_from_filename(dir / "source.txt")
+
+
 def test__blob__upload_from_string__success() -> None:
     with (
         tempfile.TemporaryDirectory() as readable_dir,
@@ -193,7 +255,6 @@ def test__blob__upload_from_string__forbidden() -> None:
         patch([Mount("readable", readable_dir)]),
     ):
         blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
-
         with pytest.raises(google.cloud.exceptions.Forbidden):
             blob.upload_from_string("Hello.")
 
