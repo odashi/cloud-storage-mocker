@@ -183,18 +183,37 @@ class Blob(mock.MagicMock):
         """Returns the Cloud Storage path of this blob."""
         return f"gs://{self._bucket.name}/{self._name}"
 
-    def download_as_text(
-        self,
-        *args: Any,  # Not supported
-    ) -> str:
-        """Downloads blob as a string."""
+    def _get_readable_path(self) -> pathlib.Path:
+        """Helper to obtain a local path for the readable bucket."""
         mount = self._env.get_mount(self._bucket.name)
         if not mount.readable:
             raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
                 f"Bucket is not readable: {self._bucket.name}"
             )
 
-        local_path = self._get_local_path(mount)
+        return self._get_local_path(mount)
+
+    def download_as_bytes(
+        self,
+        *args: Any,  # Not supported
+    ) -> bytes:
+        """Downloads blob as a byte array."""
+        local_path = self._get_readable_path()
+
+        try:
+            with local_path.open("rb") as fp:
+                return fp.read()
+        except FileNotFoundError:
+            raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
+                f"File not found: {self._get_gs_path()} -> {local_path}"
+            )
+
+    def download_as_text(
+        self,
+        *args: Any,  # Not supported
+    ) -> str:
+        """Downloads blob as a string."""
+        local_path = self._get_readable_path()
 
         try:
             with local_path.open("r") as fp:

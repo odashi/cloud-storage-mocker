@@ -10,6 +10,44 @@ import pytest
 from cloud_storage_mocker import Mount, patch
 
 
+def test__blob__download_as_bytes__success() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir, readable=True)]),
+    ):
+        dir = pathlib.Path(readable_dir)
+        (dir / "test.txt").write_text("Hello.")
+
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+
+        assert blob.download_as_bytes() == b"Hello."
+
+
+def test__blob__download_as_bytes__forbidden() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir)]),
+    ):
+        dir = pathlib.Path(readable_dir)
+        (dir / "test.txt").write_text("Hello.")
+
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+
+        with pytest.raises(google.cloud.exceptions.Forbidden):
+            blob.download_as_bytes()
+
+
+def test__blob__download_as_bytes__not_found() -> None:
+    with (
+        tempfile.TemporaryDirectory() as readable_dir,
+        patch([Mount("readable", readable_dir, readable=True)]),
+    ):
+        blob = google.cloud.storage.Client().bucket("readable").blob("test.txt")
+
+        with pytest.raises(google.cloud.exceptions.NotFound):
+            blob.download_as_bytes()
+
+
 def test__blob__download_as_text__success() -> None:
     with (
         tempfile.TemporaryDirectory() as readable_dir,
