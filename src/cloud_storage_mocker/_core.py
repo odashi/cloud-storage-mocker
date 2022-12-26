@@ -2,6 +2,7 @@
 
 import contextlib
 import dataclasses
+import io
 import pathlib
 from collections.abc import Iterator, Sequence
 from typing import Any, final
@@ -192,6 +193,23 @@ class Blob(mock.MagicMock):
             )
 
         return self._get_local_path(mount)
+
+    def download_to_file(
+        self,
+        file_obj: io.BufferedWriter,
+        *args: Any,  # Not supported
+    ) -> None:
+        local_path = self._get_readable_path()
+
+        try:
+            with local_path.open("rb") as fp:
+                data = fp.read()
+        except FileNotFoundError:
+            raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
+                f"File not found: {self._get_gs_path()} -> {local_path}"
+            )
+
+        file_obj.write(data)
 
     def download_as_bytes(
         self,
