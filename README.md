@@ -85,6 +85,7 @@ Other methods are mapped to `MagicMock`.
 - `Bucket()`
 - `Bucket.blob()`
 - `Blob()`
+- `Blob.download_as_bytes()`
 - `Blob.download_as_text()`
 - `Blob.upload_from_string()`
 
