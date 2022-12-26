@@ -82,7 +82,9 @@ Other methods are mapped to `MagicMock`.
 
 - `Client()`
 - `Client.bucket()`
+- `Bucket()`
 - `Bucket.blob()`
+- `Blob()`
 - `Blob.download_as_text()`
 - `Blob.upload_from_string()`
 

@@ -240,6 +240,12 @@ def patch(mounts: Sequence[Mount]) -> Iterator[None]:
         mounts: List of mount configs. See also Environment.
     """
     env = Environment(mounts)
-    with mock.patch("google.cloud.storage.Client") as mock_client:
+    with (
+        mock.patch("google.cloud.storage.Client") as mock_client,
+        mock.patch("google.cloud.storage.Bucket") as mock_bucket,
+        mock.patch("google.cloud.storage.Blob") as mock_blob,
+    ):
         mock_client.side_effect = lambda *args: Client(*args, _env=env)
+        mock_bucket.side_effect = lambda *args: Bucket(*args)
+        mock_blob.side_effect = lambda *args: Blob(*args)
         yield
