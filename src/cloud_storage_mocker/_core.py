@@ -4,6 +4,7 @@ import contextlib
 import dataclasses
 import pathlib
 from collections.abc import Iterator, Sequence
+from typing import Any, final
 from unittest import mock
 
 import google.cloud.exceptions
@@ -65,68 +66,132 @@ class Environment:
             f"No mount specified for the bucket: {bucket_name}"
         )
 
-    def client(self) -> "Client":
-        """Creates a mock client object."""
-        return Client(self)
+
+@final
+class NoProjectMarker:
+    pass
+
+
+_NO_PROJECT_MARKER = NoProjectMarker()
 
 
 class Client(mock.MagicMock):
     """Mocked class for Cloud Storage client."""
 
-    _env: Environment
+    _env_val: Environment
 
-    def __init__(self, env: Environment) -> None:
+    def __init__(
+        self,
+        project: Any = _NO_PROJECT_MARKER,  # Not supported
+        credentials: Any = None,  # Not supported
+        _http: Any = None,  # Not supported
+        client_info: Any = None,  # Not supported
+        client_options: Any = None,  # Not supported
+        use_auth_w_custom_endpoint: bool = True,  # Not supported
+        *,
+        _env: Environment,
+    ) -> None:
         """Initializer."""
         super().__init__(_ORIG_CLIENT)
-        self._env = env
+        self._env_val = _env
 
-    def bucket(self, name: str) -> "Bucket":
+    @property
+    def _env(self) -> Environment:
+        """Returns the environment of this client."""
+        return self._env_val
+
+    def bucket(
+        self,
+        bucket_name: str,
+        user_project: str | None = None,
+    ) -> "Bucket":
         """Creates a mock bucket object."""
-        return Bucket(self._env, name)
+        return Bucket(client=self, name=bucket_name, user_project=user_project)
 
 
 class Bucket(mock.MagicMock):
     """Mocked object for Cloud Storage bucket."""
 
-    _env: Environment
-    _name: str
+    _client: Client
+    name: str  # Exposed
 
-    def __init__(self, env: Environment, name: str) -> None:
+    def __init__(
+        self,
+        client: Client,
+        name: str,
+        user_project: str | None = None,  # Not supported
+    ) -> None:
         """Initializer."""
         super().__init__(_ORIG_BUCKET)
-        self._env = env
-        self._name = name
+        self._client = client
+        self.name = name
 
-    def blob(self, path: str) -> "Blob":
+    @property
+    def _env(self) -> Environment:
+        """Returns the environment of this client."""
+        return self._client._env
+
+    def blob(
+        self,
+        blob_name: str,
+        chunk_size: int | None = None,
+        encryption_key: bytes | None = None,
+        kms_key_name: str | None = None,
+        generation: int | None = None,
+    ) -> "Blob":
         """Creates a new mock blob object."""
-        return Blob(self._env, self._name, path)
+        return Blob(
+            name=blob_name,
+            bucket=self,
+            chunk_size=chunk_size,
+            encryption_key=encryption_key,
+            kms_key_name=kms_key_name,
+            generation=generation,
+        )
 
 
 class Blob(mock.MagicMock):
     """Mocked object for Cloud Storage blob."""
 
-    _env: Environment
-    _bucket: str
-    _path: str
+    name: str  # Exposed
+    _bucket: Bucket
 
-    def __init__(self, env: Environment, bucket: str, path: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        bucket: Bucket,
+        chunk_size: int | None = None,  # Not supported
+        encryption_key: bytes | None = None,  # Not supported
+        kms_key_name: str | None = None,  # Not supported
+        generation: int | None = None,  # Not supported
+    ) -> None:
         """Initializer."""
         super().__init__(_ORIG_BLOB)
-        self._env = env
         self._bucket = bucket
-        self._path = path
+        self._name = name
+
+    @property
+    def _env(self) -> Environment:
+        """Returns the environment of this client."""
+        return self._bucket._env
 
     def _get_local_path(self, mount: Mount) -> pathlib.Path:
-        return pathlib.Path(f"{mount.directory}/{self._path}")
+        """Returns the local path of this blob."""
+        return pathlib.Path(f"{mount.directory}/{self._name}")
 
     def _get_gs_path(self) -> str:
-        return f"gs://{self._bucket}/{self._path}"
+        """Returns the Cloud Storage path of this blob."""
+        return f"gs://{self._bucket.name}/{self._name}"
 
-    def download_as_text(self) -> str:
-        mount = self._env.get_mount(self._bucket)
+    def download_as_text(
+        self,
+        *args: Any,  # Not supported
+    ) -> str:
+        """Downloads blob as a string."""
+        mount = self._env.get_mount(self._bucket.name)
         if not mount.readable:
             raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
-                f"Bucket is not readable: {self._bucket}"
+                f"Bucket is not readable: {self._bucket.name}"
             )
 
         local_path = self._get_local_path(mount)
@@ -139,11 +204,16 @@ class Blob(mock.MagicMock):
                 f"File not found: {self._get_gs_path()} -> {local_path}"
             )
 
-    def upload_from_string(self, data: str | bytes) -> None:
-        mount = self._env.get_mount(self._bucket)
+    def upload_from_string(
+        self,
+        data: str | bytes,
+        *args: Any,  # Not supported
+    ) -> None:
+        """Uploads string to a blob."""
+        mount = self._env.get_mount(self._bucket.name)
         if not mount.writable:
             raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
-                f"Bucket is not writable: {self._bucket}"
+                f"Bucket is not writable: {self._bucket.name}"
             )
 
         local_path = self._get_local_path(mount)
@@ -171,5 +241,5 @@ def patch(mounts: Sequence[Mount]) -> Iterator[None]:
     """
     env = Environment(mounts)
     with mock.patch("google.cloud.storage.Client") as mock_client:
-        mock_client.side_effect = env.client
+        mock_client.side_effect = lambda *args: Client(*args, _env=env)
         yield
