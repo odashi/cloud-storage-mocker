@@ -25,12 +25,14 @@ def test_something(tmp_path: pathlib.Path) -> None:
             Mount("writable", dest_dir, writable=True),
         ],
     ):
+        client = google.cloud.storage.Client()
+
         # Reads a blob.
-        blob = google.cloud.storage.Client().bucket("readable").blob("hello.txt")
+        blob = client.bucket("readable").blob("hello.txt")
         assert blob.download_as_text() == "Hello."
 
         # Writes a blob.
-        blob = google.cloud.storage.Client().bucket("writable").blob("world.txt")
+        blob = client.bucket("writable").blob("world.txt")
         blob.upload_from_string("World.")
 
     # Checks if the file is written appropriately.
