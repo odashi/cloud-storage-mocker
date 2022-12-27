@@ -1,6 +1,6 @@
 """Test for README example."""
 
-import tempfile
+import pathlib
 
 import google.cloud.storage  # type: ignore[import]
 
@@ -8,27 +8,30 @@ from cloud_storage_mocker import Mount
 from cloud_storage_mocker import patch as gcs_patch
 
 
-def test_something() -> None:
-    # Creates a temporary directory
-    # And mounts it to the Cloud Storage bucket "my_bucket"
-    with (
-        tempfile.TemporaryDirectory() as readable_dir,
-        tempfile.TemporaryDirectory() as writable_dir,
-        gcs_patch(
-            [
-                Mount("readable_bucket", readable_dir, readable=True),
-                Mount("writable_bucket", writable_dir, writable=True),
-            ]
-        ),
+def test_something(tmp_path: pathlib.Path) -> None:
+    # Creates two temporary directories for readable/writable buckets.
+    src_dir = tmp_path / "src"
+    dest_dir = tmp_path / "dest"
+    src_dir.mkdir()
+    dest_dir.mkdir()
+
+    # A sample file on the readable bucket.
+    (src_dir / "hello.txt").write_text("Hello.")
+
+    # Mounts directories.
+    with gcs_patch(
+        [
+            Mount("readable", src_dir, readable=True),
+            Mount("writable", dest_dir, writable=True),
+        ],
     ):
         # Reads a blob.
-        with open(readable_dir + "/test.txt", "w") as fp:
-            fp.write("Hello.")
-        blob = google.cloud.storage.Client().bucket("readable_bucket").blob("test.txt")
+        blob = google.cloud.storage.Client().bucket("readable").blob("hello.txt")
         assert blob.download_as_text() == "Hello."
 
         # Writes a blob.
-        blob = google.cloud.storage.Client().bucket("writable_bucket").blob("test.txt")
+        blob = google.cloud.storage.Client().bucket("writable").blob("world.txt")
         blob.upload_from_string("World.")
-        with open(writable_dir + "/test.txt") as fp:
-            assert fp.read() == "World."
+
+    # Checks if the file is written appropriately.
+    assert (dest_dir / "world.txt").read_text() == "World."
