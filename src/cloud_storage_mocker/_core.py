@@ -325,19 +325,40 @@ class Blob(mock.MagicMock):
 
 
 @contextlib.contextmanager
-def patch(mounts: Sequence[Mount]) -> Iterator[None]:
+def patch(
+    mounts: Sequence[Mount],
+    client_cls_paths: Sequence[str] | None = None,
+    bucket_cls_paths: Sequence[str] | None = None,
+    blob_cls_paths: Sequence[str] | None = None,
+) -> Iterator[None]:
     """Patch Cloud Storage library.
 
     Args:
         mounts: List of mount configs. See also Environment.
+        client_cls_paths: List of fully qualified names that will be patched by the
+            mocked Client class.
+        bucket_cls_paths: List of fully qualified names that will be patched by the
+            mocked Bucket class.
+        blob_cls_paths: List of fully qualified names that will be patched by the mocked
+            Blob class.
     """
+    client_cls_paths = list(client_cls_paths or []) + ["google.cloud.storage.Client"]
+    bucket_cls_paths = list(bucket_cls_paths or []) + ["google.cloud.storage.Bucket"]
+    blob_cls_paths = list(blob_cls_paths or []) + ["google.cloud.storage.Blob"]
+
     env = Environment(mounts)
-    with (
-        mock.patch("google.cloud.storage.Client") as mock_client,
-        mock.patch("google.cloud.storage.Bucket") as mock_bucket,
-        mock.patch("google.cloud.storage.Blob") as mock_blob,
-    ):
-        mock_client.side_effect = lambda *args: Client(*args, _env=env)
-        mock_bucket.side_effect = lambda *args: Bucket(*args)
-        mock_blob.side_effect = lambda *args: Blob(*args)
+
+    with contextlib.ExitStack() as stack:
+        for name in client_cls_paths:
+            mocked = stack.enter_context(mock.patch(name))
+            mocked.side_effect = lambda *args: Client(*args, _env=env)
+
+        for name in bucket_cls_paths:
+            mocked = stack.enter_context(mock.patch(name))
+            mocked.side_effect = lambda *args: Bucket(*args)
+
+        for name in blob_cls_paths:
+            mocked = stack.enter_context(mock.patch(name))
+            mocked.side_effect = lambda *args: Blob(*args)
+
         yield

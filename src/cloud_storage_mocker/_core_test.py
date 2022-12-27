@@ -1,12 +1,17 @@
 """Tests for cloud_storage_mocker._core."""
 
 import pathlib
+from unittest import mock
 
 import google.cloud.exceptions
 import google.cloud.storage  # type: ignore[import]
 import pytest
 
-from cloud_storage_mocker import Mount, patch
+CopiedClient = google.cloud.storage.Client
+CopiedBucket = google.cloud.storage.Bucket
+CopiedBlob = google.cloud.storage.Blob
+
+from cloud_storage_mocker import Mount, patch  # noqa: E402
 
 
 def _prepare_dirs(root_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
@@ -210,3 +215,23 @@ def test__blob__upload_from_string__nested(tmp_path: pathlib.Path) -> None:
         blob.upload_from_string("Hello.")
 
     assert (dest_dir / "foo" / "bar.txt").read_text() == "Hello."
+
+
+def test__copied__unpatched() -> None:
+    with patch([]):
+        # These are copied from the original library before patching it.
+        assert not isinstance(CopiedClient, mock.MagicMock)
+        assert not isinstance(CopiedBucket, mock.MagicMock)
+        assert not isinstance(CopiedBlob, mock.MagicMock)
+
+
+def test__copied__patched() -> None:
+    with patch(
+        [],
+        client_cls_paths=[__name__ + ".CopiedClient"],
+        bucket_cls_paths=[__name__ + ".CopiedBucket"],
+        blob_cls_paths=[__name__ + ".CopiedBlob"],
+    ):
+        assert isinstance(CopiedClient, mock.MagicMock)
+        assert isinstance(CopiedBucket, mock.MagicMock)
+        assert isinstance(CopiedBlob, mock.MagicMock)
