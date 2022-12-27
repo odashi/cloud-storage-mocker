@@ -25,7 +25,7 @@ pip install -e '.[dev]'
 ## How the package works
 
 This library provides `patch` context manager, which replaces following classes on the
-`google-cloud-storage` package:
+[`google-cloud-storage`](https://github.com/googleapis/python-storage) package:
 
 - `Client`
 - `Bucket`
