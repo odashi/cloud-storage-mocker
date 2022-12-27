@@ -3,6 +3,7 @@
 import contextlib
 import dataclasses
 import io
+import os
 import pathlib
 from collections.abc import Iterator, Sequence
 from typing import Any, final
@@ -29,15 +30,27 @@ class Mount:
     """
 
     bucket_name: str
-    directory: str
-    readable: bool = False
-    writable: bool = False
+    directory: pathlib.Path
+    readable: bool
+    writable: bool
+
+    def __init__(
+        self,
+        bucket_name: str,
+        directory: str | os.PathLike[str],
+        readable: bool = False,
+        writable: bool = False,
+    ) -> None:
+        object.__setattr__(self, "bucket_name", bucket_name)
+        object.__setattr__(self, "directory", pathlib.Path(directory))
+        object.__setattr__(self, "readable", readable)
+        object.__setattr__(self, "writable", writable)
 
 
 class Environment:
     """environment for Cloud Storage."""
 
-    _mounts: Sequence[Mount]
+    _mounts: dict[str, Mount]
 
     def __init__(self, mounts: Sequence[Mount]) -> None:
         """Initializer.
@@ -45,7 +58,7 @@ class Environment:
         Args:
             mounts: List of mount configs.
         """
-        self._mounts = mounts
+        self._mounts = {m.bucket_name: m for m in mounts}
 
     def get_mount(self, bucket_name: str) -> Mount:
         """Obtains the mount config corresponding to the bucket.
@@ -59,13 +72,12 @@ class Environment:
         Raises:
             NotFound: No mount config for `bucket_name`.
         """
-        for m in self._mounts:
-            if m.bucket_name == bucket_name:
-                return m
-
-        raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
-            f"No mount specified for the bucket: {bucket_name}"
-        )
+        try:
+            return self._mounts[bucket_name]
+        except KeyError:
+            raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
+                f"No mount specified for the bucket: {bucket_name}"
+            )
 
 
 @final
@@ -178,7 +190,7 @@ class Blob(mock.MagicMock):
 
     def _get_local_path(self, mount: Mount) -> pathlib.Path:
         """Returns the local path of this blob."""
-        return pathlib.Path(f"{mount.directory}/{self._name}")
+        return mount.directory / self._name
 
     def _get_gs_path(self) -> str:
         """Returns the Cloud Storage path of this blob."""
