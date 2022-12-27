@@ -189,36 +189,26 @@ class Blob(mock.MagicMock):
         """Returns the environment of this client."""
         return self._bucket._env
 
-    def _get_local_path(self, mount: Mount) -> pathlib.Path:
+    def _get_local_path(
+        self, readable: bool = False, writable: bool = False
+    ) -> pathlib.Path:
         """Returns the local path of this blob."""
+        mount = self._env.get_mount(self._bucket.name)
+
+        if readable and not mount.readable:
+            raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
+                f"Bucket is not readable: {self._bucket.name}"
+            )
+        if writable and not mount.writable:
+            raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
+                f"Bucket is not writable: {self._bucket.name}"
+            )
+
         return mount.directory / self._name
 
     def _get_gs_path(self) -> str:
         """Returns the Cloud Storage path of this blob."""
         return f"gs://{self._bucket.name}/{self._name}"
-
-    def _get_readable_path(self) -> pathlib.Path:
-        """Obtains a local path for the readable blob."""
-        mount = self._env.get_mount(self._bucket.name)
-        if not mount.readable:
-            raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
-                f"Bucket is not readable: {self._bucket.name}"
-            )
-
-        return self._get_local_path(mount)
-
-    def _get_writable_path(self) -> pathlib.Path:
-        """Obtains a local path for the writable blob with recursive mkdir calls."""
-        mount = self._env.get_mount(self._bucket.name)
-        if not mount.writable:
-            raise google.cloud.exceptions.Forbidden(  # type: ignore[no-untyped-call]
-                f"Bucket is not writable: {self._bucket.name}"
-            )
-
-        local_path = self._get_local_path(mount)
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-
-        return local_path
 
     def download_to_file(
         self,
@@ -226,7 +216,7 @@ class Blob(mock.MagicMock):
         *args: Any,  # Not supported
     ) -> None:
         """Downloads blob to a file object."""
-        local_path = self._get_readable_path()
+        local_path = self._get_local_path(readable=True)
 
         try:
             with local_path.open("rb") as fp:
@@ -252,7 +242,7 @@ class Blob(mock.MagicMock):
         *args: Any,  # Not supported
     ) -> bytes:
         """Downloads blob as a byte array."""
-        local_path = self._get_readable_path()
+        local_path = self._get_local_path(readable=True)
 
         try:
             with local_path.open("rb") as fp:
@@ -275,7 +265,7 @@ class Blob(mock.MagicMock):
         *args: Any,  # Not supported
     ) -> str:
         """Downloads blob as a string."""
-        local_path = self._get_readable_path()
+        local_path = self._get_local_path(readable=True)
 
         try:
             with local_path.open("r") as fp:
@@ -291,7 +281,8 @@ class Blob(mock.MagicMock):
         *args: Any,  # Not supported
     ) -> None:
         """Uploads the content in the opened file to a blob."""
-        local_path = self._get_writable_path()
+        local_path = self._get_local_path(writable=True)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
 
         data = file_obj.read()
 
@@ -318,7 +309,8 @@ class Blob(mock.MagicMock):
         *args: Any,  # Not supported
     ) -> None:
         """Uploads string to a blob."""
-        local_path = self._get_writable_path()
+        local_path = self._get_local_path(writable=True)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             if isinstance(data, str):
