@@ -18,7 +18,7 @@ def test_something(tmp_path: pathlib.Path) -> None:
     # A sample file on the readable bucket.
     (src_dir / "hello.txt").write_text("Hello.")
 
-    # Mounts directories.
+    # Mounts directories. Empty list is allowed if no actual access is required.
     with gcs_patch(
         [
             Mount("readable", src_dir, readable=True),
