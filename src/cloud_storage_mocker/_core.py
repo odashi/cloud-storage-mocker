@@ -5,6 +5,7 @@ import dataclasses
 import io
 import os
 import pathlib
+import warnings
 from collections.abc import Iterator, Sequence
 from typing import Any, final
 from unittest import mock
@@ -260,6 +261,14 @@ class Blob(mock.MagicMock):
             raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
                 f"File not found: {self._get_gs_path()} -> {local_path}"
             )
+
+    def download_as_string(
+        self,
+        *args: Any,  # Not supported
+    ) -> bytes:
+        """DEPRECATED: use download_as_bytes."""
+        warnings.warn("Use Blob.download_as_bytes.", DeprecationWarning)
+        return self.download_as_bytes(*args)
 
     def download_as_text(
         self,

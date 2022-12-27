@@ -96,6 +96,7 @@ Other methods are mapped to `MagicMock`.
 - `Blob.download_to_file()`
 - `Blob.download_to_filename()`
 - `Blob.download_as_bytes()`
+- `Blob.download_as_string()`
 - `Blob.download_as_text()`
 - `Blob.upload_from_file()`
 - `Blob.upload_from_filename()`

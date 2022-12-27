@@ -113,6 +113,34 @@ def test__blob__download_as_bytes__not_found(tmp_path: pathlib.Path) -> None:
             blob.download_as_bytes()
 
 
+def test__blob__download_as_string__success(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "src.txt").write_text("Hello.")
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("src.txt")
+        assert blob.download_as_string() == b"Hello."
+
+
+def test__blob__download_as_string__forbidden(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "src.txt").write_text("Hello.")
+
+    with patch([Mount("readable", src_dir)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("src.txt")
+        with pytest.raises(google.cloud.exceptions.Forbidden):
+            blob.download_as_string()
+
+
+def test__blob__download_as_string__not_found(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("src.txt")
+        with pytest.raises(google.cloud.exceptions.NotFound):
+            blob.download_as_string()
+
+
 def test__blob__download_as_text__success(tmp_path: pathlib.Path) -> None:
     src_dir, dest_dir = _prepare_dirs(tmp_path)
     (src_dir / "src.txt").write_text("Hello.")
