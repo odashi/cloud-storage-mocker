@@ -256,9 +256,9 @@ def test__copied__unpatched() -> None:
 def test__copied__patched() -> None:
     with patch(
         [],
-        client_cls_paths=[__name__ + ".CopiedClient"],
-        bucket_cls_paths=[__name__ + ".CopiedBucket"],
-        blob_cls_paths=[__name__ + ".CopiedBlob"],
+        client_cls_names=[__name__ + ".CopiedClient"],
+        bucket_cls_names=[__name__ + ".CopiedBucket"],
+        blob_cls_names=[__name__ + ".CopiedBlob"],
     ):
         assert isinstance(CopiedClient, mock.MagicMock)
         assert isinstance(CopiedBucket, mock.MagicMock)

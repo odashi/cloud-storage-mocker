@@ -328,37 +328,37 @@ class Blob(mock.MagicMock):
 @contextlib.contextmanager
 def patch(
     mounts: Sequence[Mount],
-    client_cls_paths: Sequence[str] | None = None,
-    bucket_cls_paths: Sequence[str] | None = None,
-    blob_cls_paths: Sequence[str] | None = None,
+    client_cls_names: Sequence[str] | None = None,
+    bucket_cls_names: Sequence[str] | None = None,
+    blob_cls_names: Sequence[str] | None = None,
 ) -> Iterator[None]:
     """Patch Cloud Storage library.
 
     Args:
         mounts: List of mount configs. See also Environment.
-        client_cls_paths: List of fully qualified names that will be patched by the
+        client_cls_names: List of fully qualified names that will be patched by the
             mocked Client class.
-        bucket_cls_paths: List of fully qualified names that will be patched by the
+        bucket_cls_names: List of fully qualified names that will be patched by the
             mocked Bucket class.
-        blob_cls_paths: List of fully qualified names that will be patched by the mocked
+        blob_cls_names: List of fully qualified names that will be patched by the mocked
             Blob class.
     """
-    client_cls_paths = list(client_cls_paths or []) + ["google.cloud.storage.Client"]
-    bucket_cls_paths = list(bucket_cls_paths or []) + ["google.cloud.storage.Bucket"]
-    blob_cls_paths = list(blob_cls_paths or []) + ["google.cloud.storage.Blob"]
+    client_cls_names = list(client_cls_names or []) + ["google.cloud.storage.Client"]
+    bucket_cls_names = list(bucket_cls_names or []) + ["google.cloud.storage.Bucket"]
+    blob_cls_names = list(blob_cls_names or []) + ["google.cloud.storage.Blob"]
 
     env = Environment(mounts)
 
     with contextlib.ExitStack() as stack:
-        for name in client_cls_paths:
+        for name in client_cls_names:
             mocked = stack.enter_context(mock.patch(name))
             mocked.side_effect = lambda *args: Client(*args, _env=env)
 
-        for name in bucket_cls_paths:
+        for name in bucket_cls_names:
             mocked = stack.enter_context(mock.patch(name))
             mocked.side_effect = lambda *args: Bucket(*args)
 
-        for name in blob_cls_paths:
+        for name in blob_cls_names:
             mocked = stack.enter_context(mock.patch(name))
             mocked.side_effect = lambda *args: Blob(*args)
 
