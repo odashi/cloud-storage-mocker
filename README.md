@@ -1,6 +1,8 @@
 # cloud-storage-mocker
 
-Mocker library of Google Cloud Storage with local filesystem mounting.
+Mocker library of
+[Google Cloud Storage Python client](https://github.com/googleapis/python-storage)
+with local filesystem mounting.
 
 
 ## Install
