@@ -8,10 +8,11 @@ except Exception:
     __version__ = ""
 
 
-from cloud_storage_mocker._core import Mount, patch
+from cloud_storage_mocker._core import BlobMetadata, Mount, patch
 
 __all__ = [
     "__version__",
+    "BlobMetadata",
     "Mount",
     "patch",
 ]

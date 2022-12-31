@@ -3,6 +3,7 @@
 import contextlib
 import dataclasses
 import io
+import json
 import os
 import pathlib
 import warnings
@@ -17,6 +18,25 @@ import google.cloud.storage  # type: ignore[import]
 _ORIG_CLIENT = google.cloud.storage.Client
 _ORIG_BUCKET = google.cloud.storage.Bucket
 _ORIG_BLOB = google.cloud.storage.Blob
+
+# Metadata could be stored on "foo/bar.baz.__metadata__"
+_METADATA_EXTENSION = "__metadata__"
+
+
+@dataclasses.dataclass(frozen=True)
+class BlobMetadata:
+    """Metadata of a blob."""
+
+    # HTTP headers
+    cache_control: str | None = None
+    content_disposition: str | None = None
+    content_encoding: str | None = None
+    content_language: str | None = None
+    content_type: str | None = None
+
+    def dump_json(self) -> str:
+        """Dumps JSON representation of this object."""
+        return json.dumps(dataclasses.asdict(self))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -169,6 +189,7 @@ class Blob(mock.MagicMock):
 
     name: str  # Exposed
     _bucket: Bucket
+    _metadata: BlobMetadata
 
     def __init__(
         self,
@@ -181,13 +202,39 @@ class Blob(mock.MagicMock):
     ) -> None:
         """Initializer."""
         super().__init__(_ORIG_BLOB)
+        self.name = name
         self._bucket = bucket
-        self._name = name
+        self._metadata = BlobMetadata()
 
     @property
     def _env(self) -> Environment:
         """Returns the environment of this client."""
         return self._bucket._env
+
+    @property
+    def cache_control(self) -> str | None:
+        """Returns the HTTP Cache-Control header."""
+        return self._metadata.cache_control
+
+    @property
+    def content_disposition(self) -> str | None:
+        """Returns the HTTP Content-Disposition header."""
+        return self._metadata.content_disposition
+
+    @property
+    def content_encoding(self) -> str | None:
+        """Returns the HTTP Content-Encoding header."""
+        return self._metadata.content_encoding
+
+    @property
+    def content_language(self) -> str | None:
+        """Returns the HTTP Content-Language header."""
+        return self._metadata.content_language
+
+    @property
+    def content_type(self) -> str | None:
+        """Returns the HTTP Content-Type header."""
+        return self._metadata.content_type
 
     def _get_local_path(
         self, readable: bool = False, writable: bool = False
@@ -204,11 +251,24 @@ class Blob(mock.MagicMock):
                 f"Bucket is not writable: {self._bucket.name}"
             )
 
-        return mount.directory / self._name
+        return mount.directory / self.name
 
     def _get_gs_path(self) -> str:
         """Returns the Cloud Storage path of this blob."""
-        return f"gs://{self._bucket.name}/{self._name}"
+        return f"gs://{self._bucket.name}/{self.name}"
+
+    def _update_metadata(self, local_path: pathlib.Path) -> None:
+        """Updates inner metadata.
+
+        Args:
+            local_path: Path to the local file.
+        """
+        metadata_path = local_path.parent / f"{local_path.name}.{_METADATA_EXTENSION}"
+        if not metadata_path.exists():
+            return
+
+        with metadata_path.open() as fp:
+            self._metadata = BlobMetadata(**json.load(fp))
 
     def download_to_file(
         self,
@@ -227,6 +287,7 @@ class Blob(mock.MagicMock):
             )
 
         file_obj.write(data)
+        self._update_metadata(local_path)
 
     def download_to_filename(
         self,
@@ -246,11 +307,14 @@ class Blob(mock.MagicMock):
 
         try:
             with local_path.open("rb") as fp:
-                return fp.read()
+                data = fp.read()
         except FileNotFoundError:
             raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
                 f"File not found: {self._get_gs_path()} -> {local_path}"
             )
+
+        self._update_metadata(local_path)
+        return data
 
     def download_as_string(
         self,
@@ -269,11 +333,14 @@ class Blob(mock.MagicMock):
 
         try:
             with local_path.open("r") as fp:
-                return fp.read()
+                data = fp.read()
         except FileNotFoundError:
             raise google.cloud.exceptions.NotFound(  # type: ignore[no-untyped-call]
                 f"File not found: {self._get_gs_path()} -> {local_path}"
             )
+
+        self._update_metadata(local_path)
+        return data
 
     def upload_from_file(
         self,

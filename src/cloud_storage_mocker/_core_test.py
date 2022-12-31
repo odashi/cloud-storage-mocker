@@ -11,7 +11,7 @@ CopiedClient = google.cloud.storage.Client
 CopiedBucket = google.cloud.storage.Bucket
 CopiedBlob = google.cloud.storage.Blob
 
-from cloud_storage_mocker import Mount, patch  # noqa: E402
+from cloud_storage_mocker import BlobMetadata, Mount, patch  # noqa: E402
 
 
 def _prepare_dirs(root_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
@@ -243,6 +243,76 @@ def test__blob__upload_from_string__nested(tmp_path: pathlib.Path) -> None:
         blob.upload_from_string("Hello.")
 
     assert (dest_dir / "foo" / "bar.txt").read_text() == "Hello."
+
+
+def test__blob__cache_control(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "foo.txt").write_text("Hello.")
+    (src_dir / "foo.txt.__metadata__").write_text(
+        BlobMetadata(cache_control="max-age=86400").dump_json()
+    )
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("foo.txt")
+        assert blob.cache_control is None
+        blob.download_as_text()
+        assert blob.cache_control == "max-age=86400"
+
+
+def test__blob__content_disposition(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "foo.txt").write_text("Hello.")
+    (src_dir / "foo.txt.__metadata__").write_text(
+        BlobMetadata(content_disposition="inline").dump_json()
+    )
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("foo.txt")
+        assert blob.content_disposition is None
+        blob.download_as_text()
+        assert blob.content_disposition == "inline"
+
+
+def test__blob__content_encoding(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "foo.txt").write_text("Hello.")
+    (src_dir / "foo.txt.__metadata__").write_text(
+        BlobMetadata(content_encoding="gzip").dump_json()
+    )
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("foo.txt")
+        assert blob.content_encoding is None
+        blob.download_as_text()
+        assert blob.content_encoding == "gzip"
+
+
+def test__blob__content_language(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "foo.txt").write_text("Hello.")
+    (src_dir / "foo.txt.__metadata__").write_text(
+        BlobMetadata(content_language="en-US").dump_json()
+    )
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("foo.txt")
+        assert blob.content_language is None
+        blob.download_as_text()
+        assert blob.content_language == "en-US"
+
+
+def test__blob__content_type(tmp_path: pathlib.Path) -> None:
+    src_dir, dest_dir = _prepare_dirs(tmp_path)
+    (src_dir / "foo.txt").write_text("Hello.")
+    (src_dir / "foo.txt.__metadata__").write_text(
+        BlobMetadata(content_type="text/plain").dump_json()
+    )
+
+    with patch([Mount("readable", src_dir, readable=True)]):
+        blob = google.cloud.storage.Client().bucket("readable").blob("foo.txt")
+        assert blob.content_type is None
+        blob.download_as_text()
+        assert blob.content_type == "text/plain"
 
 
 def test__copied__unpatched() -> None:
