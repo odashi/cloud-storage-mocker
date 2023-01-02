@@ -315,6 +315,14 @@ def test__blob__content_type(tmp_path: pathlib.Path) -> None:
         assert blob.content_type == "text/plain"
 
 
+def test__arguments() -> None:
+    with patch([]):
+        # These invocation checks if the patched classes accepts *args and **kwargs.
+        client = google.cloud.storage.Client("foo", credentials=None)
+        bucket = google.cloud.storage.Bucket(client, name="bar")
+        google.cloud.storage.Blob("baz", bucket=bucket)
+
+
 def test__copied__unpatched() -> None:
     with patch([]):
         # These are copied from the original library before patching it.

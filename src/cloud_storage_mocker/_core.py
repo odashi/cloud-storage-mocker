@@ -419,14 +419,16 @@ def patch(
     with contextlib.ExitStack() as stack:
         for name in client_cls_names:
             mocked = stack.enter_context(mock.patch(name))
-            mocked.side_effect = lambda *args: Client(*args, _env=env)
+            mocked.side_effect = lambda *args, **kwargs: Client(
+                *args, _env=env, **kwargs
+            )
 
         for name in bucket_cls_names:
             mocked = stack.enter_context(mock.patch(name))
-            mocked.side_effect = lambda *args: Bucket(*args)
+            mocked.side_effect = lambda *args, **kwargs: Bucket(*args, **kwargs)
 
         for name in blob_cls_names:
             mocked = stack.enter_context(mock.patch(name))
-            mocked.side_effect = lambda *args: Blob(*args)
+            mocked.side_effect = lambda *args, **kwargs: Blob(*args, **kwargs)
 
         yield

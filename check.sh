@@ -17,7 +17,7 @@ run() {
     LOG_FILE=$(mktemp)
     $@ >${LOG_FILE} 2>${LOG_FILE}
     if [ $? -eq 0 ]; then
-        echo -e ${CLEAR}${GREEN}SUCCEEDED: $@${NC}
+        echo -e ${CLEAR}${GREEN}PASSED: $@${NC}
     else
         echo -e ${CLEAR}${RED}FAILED: $@${NC}
         echo
