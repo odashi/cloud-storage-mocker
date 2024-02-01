@@ -12,7 +12,7 @@ from typing import Any, final
 from unittest import mock
 
 import google.cloud.exceptions
-import google.cloud.storage  # type: ignore[import]
+import google.cloud.storage  # type: ignore[import-untyped]
 
 # Obtains original objects before mocking.
 _ORIG_CLIENT = google.cloud.storage.Client

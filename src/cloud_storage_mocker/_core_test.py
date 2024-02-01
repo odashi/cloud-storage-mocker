@@ -4,7 +4,7 @@ import pathlib
 from unittest import mock
 
 import google.cloud.exceptions
-import google.cloud.storage  # type: ignore[import]
+import google.cloud.storage  # type: ignore[import-untyped]
 import pytest
 
 CopiedClient = google.cloud.storage.Client
