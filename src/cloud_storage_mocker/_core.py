@@ -274,6 +274,7 @@ class Blob(mock.MagicMock):
         self,
         file_obj: io.BufferedWriter,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> None:
         """Downloads blob to a file object."""
         local_path = self._get_local_path(readable=True)
@@ -293,6 +294,7 @@ class Blob(mock.MagicMock):
         self,
         filename: str,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> None:
         """Downloads blob to a file specified by a path."""
         with open(filename, "wb") as fp:
@@ -301,6 +303,7 @@ class Blob(mock.MagicMock):
     def download_as_bytes(
         self,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> bytes:
         """Downloads blob as a byte array."""
         local_path = self._get_local_path(readable=True)
@@ -319,6 +322,7 @@ class Blob(mock.MagicMock):
     def download_as_string(
         self,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> bytes:
         """DEPRECATED: use download_as_bytes."""
         warnings.warn("Use Blob.download_as_bytes.", DeprecationWarning)
@@ -327,6 +331,7 @@ class Blob(mock.MagicMock):
     def download_as_text(
         self,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> str:
         """Downloads blob as a string."""
         local_path = self._get_local_path(readable=True)
@@ -346,6 +351,7 @@ class Blob(mock.MagicMock):
         self,
         file_obj: io.BufferedReader,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> None:
         """Uploads the content in the opened file to a blob."""
         local_path = self._get_local_path(writable=True)
@@ -365,6 +371,7 @@ class Blob(mock.MagicMock):
         self,
         filename: str,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> None:
         """Uploads the content in the specified file to a blob."""
         with open(filename, "rb") as fp:
@@ -374,6 +381,7 @@ class Blob(mock.MagicMock):
         self,
         data: str | bytes,
         *args: Any,  # Not supported
+        **kwargs: Any,  # Not supported
     ) -> None:
         """Uploads string to a blob."""
         local_path = self._get_local_path(writable=True)
