@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 name = "cloud-storage-mocker"
 description = "Mocker library of Google Cloud Storage with local filesystem mounting."
 readme = "README.md"
-requires-python = ">=3.10, <3.13"
+requires-python = ">=3.8, <3.13"
 license = {text = "MIT License"}
 authors = [
     {name = "Yusuke Oda", email = "odashi@inspiredco.ai"}
@@ -22,6 +22,8 @@ keywords = [
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

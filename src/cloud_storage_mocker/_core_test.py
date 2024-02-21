@@ -1,5 +1,7 @@
 """Tests for cloud_storage_mocker._core."""
 
+from __future__ import annotations
+
 import pathlib
 from unittest import mock
 
